@@ -396,7 +396,7 @@ static bool sugov_cpu_is_busy(struct sugov_cpu *sg_cpu)
 }
 #else
 static inline bool sugov_cpu_is_busy(struct sugov_cpu *sg_cpu) { return false; }
-#endif /* CONFIG_NO_HZ_COMMON
+#endif CONFIG_NO_HZ_COMMON
 */
 
 static void sugov_update_single(struct update_util_data *hook, u64 time,
