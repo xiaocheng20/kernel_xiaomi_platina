@@ -28,8 +28,6 @@ struct boost_drv {
 	struct workqueue_struct *wq;
 	struct work_struct input_boost;
 	struct work_struct general_boost;
-	struct work_struct suspend_cpu_up;
-	struct work_struct suspend_cpu_down;
 	struct delayed_work input_unboost;
 	struct delayed_work general_unboost;
 	struct notifier_block fb_notif;
@@ -188,8 +186,7 @@ static void general_unboost_worker(struct work_struct *work)
 	clear_stune_boost(b, GENERAL_STUNE_BOOST, b->general_stune_slot);
 }
 
-static void suspend_cpu_down_worker(struct work_struct *work)
-{
+inline void suspend_cpu_down(void) {
 	unsigned int cpu;
 
 	for_each_present_cpu(cpu)
@@ -197,8 +194,7 @@ static void suspend_cpu_down_worker(struct work_struct *work)
 			cpu_down(cpu);
 }
 
-static void suspend_cpu_up_worker(struct work_struct *work)
-{
+inline void suspend_cpu_up(void) {
 	unsigned int cpu;
 
 	for_each_present_cpu(cpu)
@@ -219,10 +215,10 @@ static int fb_notifier_cb(struct notifier_block *nb,
 
 	/* Unboost when the screen turns off */
 	if (*blank == FB_BLANK_UNBLANK) {
-		queue_work(b->wq, &b->suspend_cpu_up);
+		suspend_cpu_up();
 	} else {
 		unboost_all_cpus(b);
-		queue_work(b->wq, &b->suspend_cpu_down);
+		suspend_cpu_down();
 	}
 
 	return NOTIFY_OK;
@@ -328,8 +324,6 @@ static int __init cpu_input_boost_init(void)
 
 	INIT_WORK(&b->input_boost, input_boost_worker);
 	INIT_WORK(&b->general_boost, general_boost_worker);
-	INIT_WORK(&b->suspend_cpu_up, suspend_cpu_up_worker);
-	INIT_WORK(&b->suspend_cpu_down, suspend_cpu_down_worker);
 	INIT_DELAYED_WORK(&b->input_unboost, input_unboost_worker);
 	INIT_DELAYED_WORK(&b->general_unboost, general_unboost_worker);
 	atomic_set(&b->state, 0);
